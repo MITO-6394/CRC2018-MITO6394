@@ -75,6 +75,16 @@ public class ClosedLoopDrive {
 				forward*Math.abs(forward)-turn*Math.abs(turn));	
 	}
 	
+	public void DisInit() {
+		int absolutePosition = LTalon.getSensorCollection().getPulseWidthPosition();
+		absolutePosition &= 0xFFF;
+		LTalon.setSelectedSensorPosition(absolutePosition, Constant.kPIDLoopIdx, Constant.kTimeoutMs);
+		
+		absolutePosition = RTalon.getSensorCollection().getPulseWidthPosition();
+		absolutePosition &= 0xFFF;
+		RTalon.setSelectedSensorPosition(absolutePosition, Constant.kPIDLoopIdx, Constant.kTimeoutMs);
+	}
+	
 	public void DisDrive(double dis, double angle) {
 		/**** distance closed-loop mode */
 		
