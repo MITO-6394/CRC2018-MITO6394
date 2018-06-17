@@ -4,13 +4,13 @@ public class Constant {
 	
 	//Pin
 	
-	public final static int LTalonID=0;
+	public final static int LTalonID=3;
 	
-	public final static int RTalonID=2;
+	public final static int RTalonID=1;
 	
-	public final static int LVictorID=1;
+	public final static int LVictorID=4;
 	
-	public final static int RVictorID=3;
+	public final static int RVictorID=2;
 	
 	//Constants
 	
