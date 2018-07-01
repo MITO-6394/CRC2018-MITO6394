@@ -1,27 +1,41 @@
 package org.usfirst.frc.team6394.robot;
 
+import edu.wpi.first.wpilibj.I2C.Port;
+import edu.wpi.first.wpilibj.smartdashboard.*;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
+import com.kauailabs.navx.frc.AHRS;
 
 public class ClosedLoopDrive {
 	
-	TalonSRX LTalon=new TalonSRX(Constant.LTalonID);
+	TalonSRX LTalonE=new TalonSRX(Constant.LTalonEID);
+	TalonSRX RTalonE=new TalonSRX(Constant.RTalonEID);
 	TalonSRX RTalon=new TalonSRX(Constant.RTalonID);
-	VictorSPX RVictor=new VictorSPX(Constant.RVictorID);
-	VictorSPX LVictor=new VictorSPX(Constant.LVictorID);
+	TalonSRX LTalon=new TalonSRX(Constant.LTalonID);
+	
+	private final AHRS ahrs = new AHRS(Port.kMXP);
 	
 	public ClosedLoopDrive() {
 		/** Initiate Closed-loop system*/
 		
-		TalonSRXInit(LTalon);
-		TalonSRXInit(RTalon);
-		configPID(LTalon,0.3,0.2,0,0);
-		configPID(RTalon,0.3,0.2,0,0);
-		LVictor.follow(LTalon);
-		RVictor.follow(RTalon);
+		//'E' stands for encoder
+		TalonSRXInit(LTalonE);
+		TalonSRXInit(RTalonE);
+		configPID(LTalonE,0.25,0.1,0,0);
+		configPID(RTalonE,0.25,0.1,0,0);
 		
+		RTalon.setInverted(true);
+		RTalonE.setInverted(true);
+		
+		LTalon.follow(LTalonE);
+		RTalon.follow(RTalonE);
+		
+	}
+	
+	public AHRS getAHRS() {
+		return  ahrs;
 	}
 	
 	private void TalonSRXInit(TalonSRX _talon) {
@@ -35,11 +49,8 @@ public class ClosedLoopDrive {
 		_talon.configNominalOutputReverse(0, Constant.kTimeoutMs);
 		_talon.configPeakOutputForward(1, Constant.kTimeoutMs);
 		_talon.configPeakOutputReverse(-1, Constant.kTimeoutMs);
-		
-		int absolutePosition = _talon.getSensorCollection().getPulseWidthPosition();
-		absolutePosition &= 0xFFF;
 
-		_talon.setSelectedSensorPosition(absolutePosition, Constant.kPIDLoopIdx, Constant.kTimeoutMs);
+		_talon.setSelectedSensorPosition(0, Constant.kPIDLoopIdx, Constant.kTimeoutMs);
 	}
 	
 	private void configPID(TalonSRX _talon,double kF, double kP,double kI, double kD) {
@@ -49,6 +60,21 @@ public class ClosedLoopDrive {
 		_talon.config_kD(Constant.kPIDLoopIdx, kD, Constant.kTimeoutMs);
 	}
 	
+	private void DisplayInfo() {
+		/**** Displaying velocity on smart dashboard */
+		
+		SmartDashboard.putNumber("Info_LVel",LTalonE.getSelectedSensorVelocity(Constant.kPIDLoopIdx));
+		SmartDashboard.putNumber("Info_RVel",RTalonE.getSelectedSensorVelocity(Constant.kPIDLoopIdx));
+		
+		SmartDashboard.putNumber("Info_LPWM",LTalonE.getMotorOutputPercent());
+		SmartDashboard.putNumber("Info_RPWM",RTalonE.getMotorOutputPercent());
+		
+		SmartDashboard.putNumber("Info_LDis",(double)LTalonE.getSelectedSensorPosition(Constant.kPIDLoopIdx)/4096.0);
+		SmartDashboard.putNumber("Info_RDis",(double)RTalonE.getSelectedSensorPosition(Constant.kPIDLoopIdx)/4096.0);
+		
+		SmartDashboard.putNumber("Info_Angle",(double)ahrs.getAngle());
+	}
+	
 	public void velDrive(double forward, double turn) {
 		/****** speed mode : clockwise is positive */
 		
@@ -56,52 +82,103 @@ public class ClosedLoopDrive {
 		 * 4096 Units/Rev * 500 RPM / 600 100ms/min in either direction:
 		 * velocity setpoint is in units/100ms
 		 */
-		LTalon.set(ControlMode.Velocity,
+		
+		LTalonE.set(ControlMode.Velocity,
 				(forward*Math.abs(forward)+turn*Math.abs(turn))
 				* 500.0 * 4096 / 600);
 		
-		RTalon.set(ControlMode.Velocity,
+		RTalonE.set(ControlMode.Velocity,
 				(forward*Math.abs(forward)-turn*Math.abs(turn))
 				* 500.0 * 4096 / 600);
+		
+		DisplayInfo();
 	}
 	
 	public void PWMDrive(double forward, double turn) {
 		/****** PWM mode : clockwise is positive */
 		
-		LTalon.set(ControlMode.PercentOutput,
+		LTalonE.set(ControlMode.PercentOutput,
 				forward*Math.abs(forward)+turn*Math.abs(turn));
 		
-		RTalon.set(ControlMode.PercentOutput,
+		RTalonE.set(ControlMode.PercentOutput,
 				forward*Math.abs(forward)-turn*Math.abs(turn));	
-	}
-	
-	public void DisInit() {
-		int absolutePosition = LTalon.getSensorCollection().getPulseWidthPosition();
-		absolutePosition &= 0xFFF;
-		LTalon.setSelectedSensorPosition(absolutePosition, Constant.kPIDLoopIdx, Constant.kTimeoutMs);
 		
-		absolutePosition = RTalon.getSensorCollection().getPulseWidthPosition();
-		absolutePosition &= 0xFFF;
-		RTalon.setSelectedSensorPosition(absolutePosition, Constant.kPIDLoopIdx, Constant.kTimeoutMs);
+		DisplayInfo();
 	}
 	
-	public void DisDrive(double dis, double angle) {
+	public void resetSensor() {
+		LTalonE.setSelectedSensorPosition(0, Constant.kPIDLoopIdx, Constant.kTimeoutMs);
+		RTalonE.setSelectedSensorPosition(0, Constant.kPIDLoopIdx, Constant.kTimeoutMs);
+		ahrs.reset();
+		ahrs.resetDisplacement();
+	}
+	
+	public boolean Rotate(double angle,double vel) {
+		/***
+		 * angle is in degree
+		 */
+		
+		double angleLeft=angle-ahrs.getAngle();
+		if(util.isWithin(angleLeft,0,1)) {
+			return true;
+		}else {
+			velDrive(0,util.equalsign(angleLeft, vel));
+			return false;
+		}
+		
+		
+	}
+	
+	public boolean DisDrive(double dis, double angle, double speed) {
 		/**** distance closed-loop mode */
-		
-		configPID(LTalon,0,0.2,0,0);
-		configPID(RTalon,0,0.2,0,0);
 		
 		/* One rev=4096units
 		 * Times 4096
 		 */
 		
+		double temppos;
+		boolean result=false;
+		
+		temppos=(dis+angle)* 4096;
+		if(Math.abs(LTalonE.getSelectedSensorPosition(0))<Math.abs(temppos)) {
+			LTalonE.set(ControlMode.Velocity,
+					util.equalsign(temppos,
+					(Constant.EndingSpeed+speed*
+							Math.pow(Math.abs((temppos-LTalonE.getSelectedSensorPosition(0))/temppos),0.22)
+					)* 500.0 * 4096 / 600));
+			result=false;
+		}else {
+			LTalonE.set(ControlMode.Velocity,0);
+			result=true;
+		}
+			
+			
+		
+		temppos=(dis-angle)* 4096;
+		if(Math.abs(RTalonE.getSelectedSensorPosition(0))<Math.abs(temppos)) {
+			RTalonE.set(ControlMode.Velocity,
+					util.equalsign(temppos,
+					(Constant.EndingSpeed+speed*
+							Math.pow(Math.abs((temppos-RTalonE.getSelectedSensorPosition(0))/temppos),0.22)
+					)* 500.0 * 4096 / 600));
+			return false;
+		}else {
+			RTalonE.set(ControlMode.Velocity,0);
+			return result&true;
+		}
+			
+		
+		/*
+		configPID(LTalon,0,0.05,0,0.02);
+		configPID(RTalon,0,0.05,0,0.02);
+		
 		LTalon.set(ControlMode.Position,
-				(dis*Math.abs(dis)+angle*Math.abs(angle))
-				* 4096);
+				(dis+angle)* 4096);
 		
 		RTalon.set(ControlMode.Position,
-				(dis*Math.abs(dis)-angle*Math.abs(angle))
-				* 4096);
+				(dis-angle)* 4096);
 		
+		DisplayInfo();
+		 */
 	}
 }
