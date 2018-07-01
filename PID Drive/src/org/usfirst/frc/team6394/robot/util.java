@@ -16,4 +16,14 @@ public abstract class util {
 		
 		return (value<=(center+range))&&(value>=(center-range));
 	}
+	
+	public static double setWithin(double value, double center, double range){
+		if(value>center+range){
+			return center+range;
+		}else if(value<center-range){
+			return center-range;
+		}else{
+			return value;
+		}
+	}
 }
