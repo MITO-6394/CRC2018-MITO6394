@@ -64,7 +64,6 @@ public class ClosedLoopDrive {
 		/**** Displaying velocity on smart dashboard */
 		
 		SmartDashboard.putNumber("Info_LVel",LTalonE.getSelectedSensorVelocity(Constant.kPIDLoopIdx));
-		SmartDashboard.putNumber("Info_RVel",RTalonE.getSelectedSensorVelocity(Constant.kPIDLoopIdx));
 		
 		SmartDashboard.putNumber("Info_LPWM",LTalonE.getMotorOutputPercent());
 		SmartDashboard.putNumber("Info_RPWM",RTalonE.getMotorOutputPercent());
@@ -83,14 +82,20 @@ public class ClosedLoopDrive {
 		 * velocity setpoint is in units/100ms
 		 */
 		
+		LTempVel=(forward*Math.abs(forward)+turn*Math.abs(turn))* 500.0 * 4096 / 600;		
 		LTalonE.set(ControlMode.Velocity,
-				(forward*Math.abs(forward)+turn*Math.abs(turn))
-				* 500.0 * 4096 / 600);
-		
-		RTalonE.set(ControlMode.Velocity,
-				(forward*Math.abs(forward)-turn*Math.abs(turn))
-				* 500.0 * 4096 / 600);
-		
+            util.setWithin(
+                LTempVel,   //Temp velocity
+                LTalonE.getSelectedSensorVelocity(Constant.kPIDLoopIdx),    //Target velocity
+                Constant.limitSpeed);   //limit
+
+		RTempVel=(forward*Math.abs(forward)-turn*Math.abs(turn))* 500.0 * 4096 / 600;
+        RTalonE.set(ControlMode.Velocity,
+            util.setWithin(
+                RTempVel,   //Temp velocity
+                RTalonE.getSelectedSensorVelocity(Constant.kPIDLoopIdx),    //Targer velocity
+                Constant.limitSpeed);   //limit
+
 		DisplayInfo();
 	}
 	
@@ -113,20 +118,19 @@ public class ClosedLoopDrive {
 		ahrs.resetDisplacement();
 	}
 	
-	public boolean Rotate(double angle,double vel) {
+	public boolean Rotate(double angle,double vel, double forVel) {
 		/***
 		 * angle is in degree
 		 */
 		
 		double angleLeft=angle-ahrs.getAngle();
 		if(util.isWithin(angleLeft,0,1)) {
+			velDrive(0,0);
 			return true;
 		}else {
-			velDrive(0,util.equalsign(angleLeft, vel));
+			velDrive(forVel,util.equalsign(angleLeft, vel));
 			return false;
 		}
-		
-		
 	}
 	
 	public boolean DisDrive(double dis, double angle, double speed) {
@@ -151,8 +155,6 @@ public class ClosedLoopDrive {
 			LTalonE.set(ControlMode.Velocity,0);
 			result=true;
 		}
-			
-			
 		
 		temppos=(dis-angle)* 4096;
 		if(Math.abs(RTalonE.getSelectedSensorPosition(0))<Math.abs(temppos)) {
@@ -166,7 +168,6 @@ public class ClosedLoopDrive {
 			RTalonE.set(ControlMode.Velocity,0);
 			return result&true;
 		}
-			
 		
 		/*
 		configPID(LTalon,0,0.05,0,0.02);
