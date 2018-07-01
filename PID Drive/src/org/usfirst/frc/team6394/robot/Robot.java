@@ -30,7 +30,9 @@ public class Robot extends IterativeRobot {
 	private Joystick m_stick = new Joystick(5);
 	private Timer m_timer = new Timer();
 	private ClosedLoopDrive drive= new ClosedLoopDrive();
+	private static final double rotatespeed=0.45;
 	
+	int i=0;
 	
 	//SensorDifferentialBase Base=new SensorDifferentialBase(LTalon,RTalon);
 	
@@ -41,7 +43,10 @@ public class Robot extends IterativeRobot {
 	 * used for any initialization code.
 	 */
 	@Override
+	
 	public void robotInit() {	
+		drive.getAHRS().reset();
+		drive.getAHRS().resetDisplacement();
 	}
 	
 	/**
@@ -51,6 +56,7 @@ public class Robot extends IterativeRobot {
 	public void autonomousInit() {
 		m_timer.reset();
 		m_timer.start();
+		drive.resetSensor();
 	}
 
 	/**
@@ -59,9 +65,133 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void autonomousPeriodic() {
 		// Drive for 2 seconds
-		if (m_timer.get() < 2.0) {
-			drive.velDrive(0.5, 0.0); // drive forwards half speed
-		} 
+		
+		
+		if(i<8) {
+		switch(i) {
+		case 0:
+			if(drive.DisDrive(1, 0, 0.2)) {
+				i++;
+				drive.resetSensor();
+			}
+			break;
+		case 1:
+			if(drive.Rotate(90, rotatespeed)) {
+				i++;
+				drive.resetSensor();
+			}
+			break;
+		case 2:
+			if(drive.DisDrive(1, 0, 0.2)) {
+				i++;
+				drive.resetSensor();
+			}
+			break;
+		case 3:
+			if(drive.Rotate(90, rotatespeed)) {
+				i++;
+				drive.resetSensor();
+			}
+			break;
+		case 4:
+			if(drive.DisDrive(1, 0, 0.2)) {
+				i++;
+				drive.resetSensor();
+			}
+			break;
+		case 5:
+			if(drive.Rotate(90, rotatespeed)) {
+				i++;
+				drive.resetSensor();
+			}
+			break;
+		case 6:
+			if(drive.DisDrive(1, 0, 0.2)) {
+				i++;
+				drive.resetSensor();
+			}
+			break;
+		case 7:
+			if(drive.Rotate(90, rotatespeed)) {
+				i++;
+				drive.resetSensor();
+			}
+			break;
+		case 8:
+			drive.velDrive(0, 0);
+			break;
+		}
+		}//square
+		
+		/*
+		if(i<8) {
+			switch(i) {
+			case 0:
+				if(drive.Rotate(90, rotatespeed)) {
+					i++;
+					drive.resetSensor();
+				}
+				break;
+			case 1:
+				if(drive.Rotate(90, rotatespeed)) {
+					i++;
+					drive.resetSensor();
+				}
+				break;
+			case 2:
+				if(drive.Rotate(90, rotatespeed)) {
+					i++;
+					drive.resetSensor();
+				}
+				break;
+			case 3:
+				if(drive.Rotate(90, rotatespeed)) {
+					i++;
+					drive.resetSensor();
+				}
+				break;
+			case 4:
+				if(drive.Rotate(90, rotatespeed)) {
+					i++;
+					drive.resetSensor();
+				}
+				break;
+			case 5:
+				if(drive.Rotate(90, rotatespeed)) {
+					i++;
+					drive.resetSensor();
+				}
+				break;
+			case 6:
+				if(drive.Rotate(90, rotatespeed)) {
+					i++;
+					drive.resetSensor();
+				}
+				break;
+			case 7:
+				if(drive.Rotate(90, rotatespeed)) {
+					i++;
+					drive.resetSensor();
+				}
+				break;
+			case 8:
+				drive.velDrive(0, 0);
+				break;
+			}
+			}
+			*/
+		
+		/*
+		for(i=0;i<6;i++) {
+			drive.DisDrive(2, 0, 0.6);
+			drive.DisInit();
+			drive.DisDrive(0.0, 0.733, 0.6);
+			drive.DisInit();
+		}//hexagon
+		
+		drive.DisDrive(4, 4.4, 0.5);//circle
+		*/
+		
 	}
 
 	/**
@@ -76,7 +206,14 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void teleopPeriodic() {
-		drive.velDrive(util.deadband(m_stick.getY(),0.1), util.deadband(m_stick.getX(),0.1));
+	
+		drive.velDrive(util.deadband(m_stick.getY(),0.1)*0.5, util.deadband(m_stick.getX(),0.1)*0.5);
+		
+		if(m_stick.getRawButtonPressed(1)) {
+			drive.resetSensor();
+		}
+		
+		
 	}
 
 	/**
@@ -84,6 +221,14 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void testPeriodic() {
+
 	}
 	
+	public void Disabled() {
+		while(isDisabled());
+	}
+	
+	public void RobotInit() {
+		
+	}
 }
