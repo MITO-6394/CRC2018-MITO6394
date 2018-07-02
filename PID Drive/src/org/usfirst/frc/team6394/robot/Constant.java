@@ -26,9 +26,9 @@ public class Constant {
 	
 	//Adjust
 	
-	public final static double MinSpeedVal=200;
+	public final static double r_min_V=200;		//raw encoder value
 	
-	public final static double Ratio_SignalVel=1000.0;
+	public final static double r_max_V=1000.0;	//raw encoder value
 	
-	public final static double MinSpeed=MinSpeedVal/SignalVelRatio;
+	public final static double min_V=r_min_V/r_max_V;
 }
