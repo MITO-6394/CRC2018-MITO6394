@@ -26,9 +26,9 @@ public class Constant {
 	
 	//Adjust
 	
-	public final static double limSpeedVal=200;
+	public final static double MinSpeedVal=200;
 	
 	public final static double Ratio_SignalVel=1000.0;
 	
-	public final static double EndSpeed=limSpeedVal/SignalVelRatio;
+	public final static double MinSpeed=MinSpeedVal/SignalVelRatio;
 }
