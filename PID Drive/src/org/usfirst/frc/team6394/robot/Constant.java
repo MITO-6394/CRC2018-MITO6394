@@ -28,4 +28,7 @@ public class Constant {
 	
 	public final static double EndingSpeed=0.13;
 	
+	public final static double limitSpeed=200;
+	
+	public final static double SignalVelRatio=1000.0;
 }
