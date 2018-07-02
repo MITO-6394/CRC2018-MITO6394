@@ -18,6 +18,7 @@ public abstract class util {
 	}
 	
 	public static double setWithin(double value, double center, double range){
+		range*=range<0?-1.0:1.0;
 		if(value>center+range){
 			return center+range;
 		}else if(value<center-range){
