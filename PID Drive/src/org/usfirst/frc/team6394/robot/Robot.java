@@ -31,6 +31,7 @@ public class Robot extends IterativeRobot {
 	private Timer m_timer = new Timer();
 	private ClosedLoopDrive drive= new ClosedLoopDrive();
 	private static final double rotatespeed=0.45;
+	private static final double basespeed=0.6;
 	
 	int i=0;
 	
@@ -76,7 +77,7 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 1:
-			if(drive.Rotate(90, rotatespeed)) {
+			if(drive.Rotate(90, rotatespeed,0.1)) {
 				i++;
 				drive.resetSensor();
 			}
@@ -88,7 +89,7 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 3:
-			if(drive.Rotate(90, rotatespeed)) {
+			if(drive.Rotate(90, rotatespeed,0.1)) {
 				i++;
 				drive.resetSensor();
 			}
@@ -100,7 +101,7 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 5:
-			if(drive.Rotate(90, rotatespeed)) {
+			if(drive.Rotate(90, rotatespeed,0.1)) {
 				i++;
 				drive.resetSensor();
 			}
@@ -112,7 +113,7 @@ public class Robot extends IterativeRobot {
 			}
 			break;
 		case 7:
-			if(drive.Rotate(90, rotatespeed)) {
+			if(drive.Rotate(90, rotatespeed,0.1)) {
 				i++;
 				drive.resetSensor();
 			}
@@ -207,7 +208,7 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void teleopPeriodic() {
 	
-		drive.velDrive(util.deadband(m_stick.getY(),0.1)*0.5, util.deadband(m_stick.getX(),0.1)*0.5);
+		drive.velDrive(util.deadband(m_stick.getY(),0.1)*basespeed, util.deadband(m_stick.getX(),0.1)*basespeed);
 		
 		if(m_stick.getRawButtonPressed(1)) {
 			drive.resetSensor();
