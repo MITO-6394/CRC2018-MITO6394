@@ -17,6 +17,9 @@ public class ClosedLoopDrive {
 	
 	private final AHRS ahrs = new AHRS(Port.kMXP);
 	
+	private double pos_X=0;
+	private double pos_Y=0;
+
 	public ClosedLoopDrive() {
 		/** Initiate Closed-loop system*/
 		
@@ -25,7 +28,7 @@ public class ClosedLoopDrive {
 		TalonSRXInit(RTalonE);
 		configPID(LTalonE,0.4,0.6,0,0);
 		configPID(RTalonE,0.4,0.6,0,0);
-		
+
 		RTalon.setInverted(true);
 		RTalonE.setInverted(true);
 		
@@ -34,37 +37,14 @@ public class ClosedLoopDrive {
 		
 	}
 	
-	public AHRS getAHRS() {
-		return  ahrs;
-	}
-	
-	private void TalonSRXInit(TalonSRX _talon) {
-		//set up TalonSRX and closed loop
-		
-		_talon.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative,
-				Constant.kPIDLoopIdx,Constant.kTimeoutMs);
-		_talon.setSensorPhase(true);
-		
-		_talon.configNominalOutputForward(0, Constant.kTimeoutMs);
-		_talon.configNominalOutputReverse(0, Constant.kTimeoutMs);
-		_talon.configPeakOutputForward(1, Constant.kTimeoutMs);
-		_talon.configPeakOutputReverse(-1, Constant.kTimeoutMs);
-
-		_talon.setSelectedSensorPosition(0, Constant.kPIDLoopIdx, Constant.kTimeoutMs);
-	}
-	
-	private void configPID(TalonSRX _talon,double kF, double kP,double kI, double kD) {
-		_talon.config_kF(Constant.kPIDLoopIdx, kF, Constant.kTimeoutMs);
-		_talon.config_kP(Constant.kPIDLoopIdx, kP, Constant.kTimeoutMs);
-		_talon.config_kI(Constant.kPIDLoopIdx, kI, Constant.kTimeoutMs);
-		_talon.config_kD(Constant.kPIDLoopIdx, kD, Constant.kTimeoutMs);
-	}
+	public AHRS getAHRS() {return  ahrs;}
+	public double getX(){return pos_X;}
+	public double getY(){return pos_Y;}
 	
 	private void DisplayInfo() {
 		/**** Displaying velocity on smart dashboard */
 		
 		SmartDashboard.putNumber("Info_LVel",LTalonE.getSelectedSensorVelocity(Constant.kPIDLoopIdx));
-		system.out("");
 		
 		SmartDashboard.putNumber("Info_LPWM",LTalonE.getMotorOutputPercent());
 		SmartDashboard.putNumber("Info_RPWM",RTalonE.getMotorOutputPercent());
@@ -73,9 +53,38 @@ public class ClosedLoopDrive {
 		SmartDashboard.putNumber("Info_RDis",(double)RTalonE.getSelectedSensorPosition(Constant.kPIDLoopIdx)/4096.0);
 		
 		SmartDashboard.putNumber("Info_Angle",(double)ahrs.getAngle());
+
+		SmartDashboard.putNumber("Info_X",(double)pos_X);
+		SmartDashboard.putNumber("Info_Y",(double)pos_Y);
+	}
+
+	public void resetSensor() {
+		LTalonE.setSelectedSensorPosition(0, Constant.kPIDLoopIdx, Constant.kTimeoutMs);
+		RTalonE.setSelectedSensorPosition(0, Constant.kPIDLoopIdx, Constant.kTimeoutMs);
+		ahrs.reset();
+		ahrs.resetDisplacement();
+	}
+
+	public void MoveToPos(double x, double y, double angle, double speed){
+		
 	}
 	
-	public void velDrive(double forward, double turn) {
+	public void UpdateMap(){
+		double last_dis;
+
+		double this_dis=
+			(LTalonE.getSelectedSensorPosition(Constant.kPIDLoopIdx)
+			+RTalonE.getSelectedSensorPosition(Constant.kPIDLoopIdx))/2;
+
+		double delta_dis=this_dis-last_dis;
+
+		pos_X+=Math.cos(ahrs.getAngle())*delta_dis;
+		pos_Y+=Math.sin(ahrs.getAngle())*delta_dis;
+
+		last_dis=this_dis;
+	}
+
+	public void velDrive(double forward, double turn, double smoothMode=true) {
 		/****** speed mode : clockwise is positive */
 		
 		/* Convert 500 RPM to units / 100ms.
@@ -83,29 +92,30 @@ public class ClosedLoopDrive {
 		 * velocity setpoint is in units/100ms
 		 */
 		
-		double LTempVel=(forward*Math.abs(forward)+turn*Math.abs(turn))
-					* Constant.SignalVelRatio;
-		
-		LTalonE.set(ControlMode.Velocity,
-            util.setWithin(
-                LTempVel,   //Temp velocity
-                LTalonE.getSelectedSensorVelocity(Constant.kPIDLoopIdx),    //Target velocity
-                Constant.limitSpeed));   //limit
-		
-		SmartDashboard.putNumber("Info_LTempVel", LTempVel);
-		SmartDashboard.putNumber("Info_LTargetVel",  util.setWithin(
-                LTempVel,   //Temp velocity
-                LTalonE.getSelectedSensorVelocity(Constant.kPIDLoopIdx),    //Target velocity
-                Constant.limitSpeed));
+		double LTempV=(forward*Math.abs(forward)+turn*Math.abs(turn))
+					* Constant.r_max_V;
+		double RTempV=(forward*Math.abs(forward)-turn*Math.abs(turn))
+					* Constant.r_max_V;
 
-		double RTempVel=(forward*Math.abs(forward)-turn*Math.abs(turn))
-					* Constant.SignalVelRatio;
+		if(smoothMode){
+			//motion profile applied
+			LTalonE.set(ControlMode.Velocity,
+            	util.setWithin(
+                	LTempV,   //Temp velocity
+                	LTalonE.getSelectedSensorVelocity(Constant.kPIDLoopIdx),    //Target velocity
+                	Constant.r_min_V));   //limit
 		
-        RTalonE.set(ControlMode.Velocity,
-            util.setWithin(
-                RTempVel,   //Temp velocity
-                RTalonE.getSelectedSensorVelocity(Constant.kPIDLoopIdx),    //Targer velocity
-                Constant.limitSpeed));   //limit
+        	RTalonE.set(ControlMode.Velocity,
+            	util.setWithin(
+                	RTempV,   //Temp velocity
+                	RTalonE.getSelectedSensorVelocity(Constant.kPIDLoopIdx),    //Targer velocity
+                	Constant.r_min_V));   //limit
+		}else{
+			//no motion profile applied
+			LTalonE.set(ControlMode.Velocity,LTempV); 
+        	RTalonE.set(ControlMode.Velocity,RTempV); 
+		}		
+
 
 		DisplayInfo();
 	}
@@ -122,13 +132,6 @@ public class ClosedLoopDrive {
 		DisplayInfo();
 	}
 	
-	public void resetSensor() {
-		LTalonE.setSelectedSensorPosition(0, Constant.kPIDLoopIdx, Constant.kTimeoutMs);
-		RTalonE.setSelectedSensorPosition(0, Constant.kPIDLoopIdx, Constant.kTimeoutMs);
-		ahrs.reset();
-		ahrs.resetDisplacement();
-	}
-	
 	public boolean Rotate(double angle,double vel, double forVel) {
 		/***
 		 * angle is in degree
@@ -136,13 +139,24 @@ public class ClosedLoopDrive {
 		
 		double angleLeft=angle-ahrs.getAngle();
 		if(util.isWithin(angleLeft,0,1)) {
-			velDrive(0,0);
+			velDrive(forVel,0,false);
 			return true;
-		}else {
+		}else if(
+				util.isWithin(
+					angleLeft,
+					0,
+					Constant.SlowDownAngle*(ahrs.getRate()/Cosntant.max_RV)
+					//Different starting angles
+				)
+		{
+			velDrive(forVel,Constant.,false);
+			return false;
+		}else{
 			velDrive(forVel,util.equalsign(angleLeft, vel));
 			return false;
 		}
 	}
+
 	
 	public boolean DisDrive(double dis, double angle, double speed) {
 		/**** distance closed-loop mode */
@@ -193,4 +207,27 @@ public class ClosedLoopDrive {
 		DisplayInfo();
 		 */
 	}
+
+	private void TalonSRXInit(TalonSRX _talon) {
+		//set up TalonSRX and closed loop
+		
+		_talon.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative,
+				Constant.kPIDLoopIdx,Constant.kTimeoutMs);
+		_talon.setSensorPhase(true);
+		
+		_talon.configNominalOutputForward(0, Constant.kTimeoutMs);
+		_talon.configNominalOutputReverse(0, Constant.kTimeoutMs);
+		_talon.configPeakOutputForward(1, Constant.kTimeoutMs);
+		_talon.configPeakOutputReverse(-1, Constant.kTimeoutMs);
+
+		_talon.setSelectedSensorPosition(0, Constant.kPIDLoopIdx, Constant.kTimeoutMs);
+	}
+	
+	private void configPID(TalonSRX _talon,double kF, double kP,double kI, double kD) {
+		_talon.config_kF(Constant.kPIDLoopIdx, kF, Constant.kTimeoutMs);
+		_talon.config_kP(Constant.kPIDLoopIdx, kP, Constant.kTimeoutMs);
+		_talon.config_kI(Constant.kPIDLoopIdx, kI, Constant.kTimeoutMs);
+		_talon.config_kD(Constant.kPIDLoopIdx, kD, Constant.kTimeoutMs);
+	}
+
 }
