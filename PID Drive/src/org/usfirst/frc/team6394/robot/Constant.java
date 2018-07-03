@@ -24,11 +24,19 @@ public class Constant {
 
 	public final static int kTurnTimeoutSec = 3;
 	
-	//Adjust
+	/****
+	/* Below are constants that need to be adjusted
+	/* V stands for velocity
+	/* RV stands for rotation velocity
+	*/
 	
 	public final static double r_min_V=200;		//raw encoder value
 	
 	public final static double r_max_V=1000.0;	//raw encoder value
 	
-	public final static double min_V=r_min_V/r_max_V;
+	public final static double min_V=r_min_V/r_max_V;	//normalized min velocity when robot starts to move
+	
+	public final static double max_RV=300;
+	
+	public final static double SlowDownAngle=20;	//angle where robot starts to slow down
 }
