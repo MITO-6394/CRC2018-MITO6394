@@ -19,12 +19,13 @@ public abstract class util {
 		/*** 
 		 * range is in percent
 		 */
+		range=Math.abs(range);
 		return (value<=(center+range))&&(value>=(center-range));
 	}
 
 	public static double setWithin(double value, double center, double range){
 		
-		range*=range<0?-1.0:1.0;
+		range=Math.abs(range);
 		if(value>center+range){
 			return center+range;
 		}else if(value<center-range){

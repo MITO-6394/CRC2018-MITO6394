@@ -2,6 +2,8 @@ package org.usfirst.frc.team6394.robot;
 import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.PIDOutput;
+import edu.wpi.first.wpilibj.PIDSource;
+import edu.wpi.first.wpilibj.PIDSourceType;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.smartdashboard.*;
 import com.ctre.phoenix.motorcontrol.ControlMode;
@@ -10,7 +12,7 @@ import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.kauailabs.navx.frc.AHRS;
 
-public class Base{
+public class Base implements PIDOutput,PIDSource{
 
 	TalonSRX LMotorMaster=new TalonSRX(pin.BaseLMotorMasterID);
 	TalonSRX RMotorMaster=new TalonSRX(pin.BaseRMotorMasterID);
@@ -50,14 +52,12 @@ public class Base{
 		
 		resetSensor();
 		
-		/*
-		turnController=new PIDController(0.03, 0, 0, 0, ahrs, null);
+		turnController=new PIDController(0.03, 0, 0, 0, this, this);
 		turnController.setInputRange(-180.0f, 180.0f);
 		turnController.setOutputRange(-1.0, 1.0);
 		turnController.setAbsoluteTolerance(tolErrAngle);
 		turnController.setContinuous(true);
-	*/
-		
+
 	}
 
 
@@ -89,8 +89,8 @@ public class Base{
 		 * 4096 Units/Rev * 500 RPM / 600 100ms/min in either direction:
 		 * velocity setpoint is in units/100ms
 		 */
-		configPID(LMotorMaster,0.3,0.7,0.0001,0.3);
-		configPID(RMotorMaster,0.3,0.7,0.0001,0.3);
+		configPID(LMotorMaster,0.3,0.7,0,0.3);
+		configPID(RMotorMaster,0.3,0.7,0,0.3);
 
 		double LTempV=(forward*Math.abs(forward)+turn*Math.abs(turn))
 					* Constants.kRawMaxVel;
@@ -100,19 +100,35 @@ public class Base{
 
 		if(smoothMode){
 			//motion profile applied
-			LMotorMaster.set(ControlMode.Velocity,
-            	util.setWithin(
-                	LTempV,   //Temp velocity
-                	LMotorMaster.getSelectedSensorVelocity(Constants.kPIDLoopIdx),    //Target velocity
-                	Constants.kRawMinVel*1.5));   //limit
+			if(Math.abs(LTempV)<Math.abs(LMotorMaster.getSelectedSensorVelocity(Constants.kPIDLoopIdx))) {
+				//Deacceleration
+				LMotorMaster.set(ControlMode.Velocity,
+		            	util.setWithin(
+		                	LTempV,   //Temp velocity
+		                	LMotorMaster.getSelectedSensorVelocity(Constants.kPIDLoopIdx),    //Target velocity
+		                	Constants.kDeaccThreshold));   //limit
+					
+		        RMotorMaster.set(ControlMode.Velocity,
+		            	util.setWithin(
+		                	RTempV,   //Temp velocity
+		                	RMotorMaster.getSelectedSensorVelocity(Constants.kPIDLoopIdx),    //Targer velocity
+		                	Constants.kDeaccThreshold));   //limit
+			}else {
+				//Acceleration
+				LMotorMaster.set(ControlMode.Velocity,
+		            	util.setWithin(
+		                	LTempV,   //Temp velocity
+		                	LMotorMaster.getSelectedSensorVelocity(Constants.kPIDLoopIdx),    //Target velocity
+		                	Constants.kAccThreshold));   //limit
+					
+		        RMotorMaster.set(ControlMode.Velocity,
+		            	util.setWithin(
+		                	RTempV,   //Temp velocity
+		                	RMotorMaster.getSelectedSensorVelocity(Constants.kPIDLoopIdx),    //Targer velocity
+		                	Constants.kAccThreshold));   //limit
+			}
 			
-        	RMotorMaster.set(ControlMode.Velocity,
-            	util.setWithin(
-                	RTempV,   //Temp velocity
-                	RMotorMaster.getSelectedSensorVelocity(Constants.kPIDLoopIdx),    //Targer velocity
-                	Constants.kRawMinVel*1.5));   //limit
 		}else{
-
 			//no motion profile applied
 			LMotorMaster.set(ControlMode.Velocity,LTempV); 
         	RMotorMaster.set(ControlMode.Velocity,RTempV); 
@@ -144,15 +160,15 @@ public class Base{
 		 * angle is in degree
 		 */
 		
-		/*
-		turnController.setSetpoint(angle);
-		velDrive(forVel,vel*turnController.get(),false);
-		*/
-		return true;
+//		turnController.setSetpoint(angle);
+//		SmartDashboard.putNumber("Info_PIDOutput", turnController.get());
+//		velDrive(forVel,vel*turnController.get(),false);
+//		return turnController.onTarget();
 		
-		/*
-		double angleLeft=angle-ahrs.getAngle();
-		if(util.isWithin(angleLeft,0,1)) {
+	
+		double angleLeft=angle-(ahrs.getAngle()%360.0);
+		SmartDashboard.putNumber("Info_MaxRV", ahrs.getRate());
+		if(util.isWithin(angleLeft,0,2.5)) {
 			velDrive(forVel,0,false);
 			return true;
 		}else if(
@@ -164,13 +180,13 @@ public class Base{
 					)
 				)
 		{
-			velDrive(forVel,Constants.kRawMinVel,false);
+			velDrive(forVel,util.equalsign(-angleLeft, Constants.kMinVel*2),false);
 			return false;
 		}else{
-			velDrive(forVel,util.equalsign(angleLeft, vel),true);
+			velDrive(forVel,-angleLeft*vel,true);
 			return false;
 		}
-		*/
+
 	}
 
 	public boolean DisDrive(double dis, double speed, boolean preciseMode) {
@@ -204,8 +220,8 @@ public class Base{
 			
 			//Distance Closed Loop
 			
-			configPID(LMotorMaster,0,0.03,0.0001,0.01);
-			configPID(RMotorMaster,0,0.03,0.0001,0.01);
+			configPID(LMotorMaster,0,0.03,0,0.01);
+			configPID(RMotorMaster,0,0.03,0,0.01);
 			
 			
 			LMotorMaster.set(ControlMode.Position,LTempPos);
@@ -263,7 +279,6 @@ public class Base{
 		ahrs.resetDisplacement();
 	}
 
-
 	private void TalonSRXInit(TalonSRX _talon) {
 		//set up TalonSRX and closed loop
 		_talon.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative,
@@ -288,5 +303,21 @@ public class Base{
 
 	}
 	
+	@Override
+	public void pidWrite(double output) {
+	}
+	
+	@Override
+	public double pidGet() {
+		return ahrs.getAngle();
+	}
+	
+	@Override
+	public PIDSourceType getPIDSourceType() {
+		return PIDSourceType.kRate;
+	}
+	
+	@Override
+	public void setPIDSourceType(PIDSourceType pidSource) {	}
 	
 }

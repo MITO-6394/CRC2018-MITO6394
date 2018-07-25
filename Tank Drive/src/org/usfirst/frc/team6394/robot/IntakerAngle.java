@@ -16,7 +16,7 @@ public class IntakerAngle {
 	private final static double Angle_135=0.225*10000;
 	private final static double Angle_90=0.15*10000;
 	private final static double Angle_45=0.75*10000;
-	private final static double minAngle=0.05*10000;
+	private final static double minAngle=0.0*10000;
 	
 	
 	private TalonSRX AngleMotor=new TalonSRX(pin.AngleMotorID);

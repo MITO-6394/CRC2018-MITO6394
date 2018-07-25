@@ -17,13 +17,13 @@ public class Intaker {
 	/*Components*/
 	
 	private VictorSPX IntakerRMotor=new VictorSPX(pin.IntakerRMotorID);
-	private VictorSPX IntakerLMotor=new VictorSPX(pin.IntakerLMotorID);	
+	private VictorSPX IntakerLMotor=new VictorSPX(pin.IntakerLMotorID);
 	
 	private DigitalInput IntakerRLight=new DigitalInput(pin.IntakerRLight);
 	private DigitalInput IntakerLLight=new DigitalInput(pin.IntakerLLight);
 	
 	private DoubleSolenoid IntakerDSol=
-			new DoubleSolenoid(pin.IntakerDoubleSolenoidForawrdID,pin.IntakerDoubleSolenoidBackwardID);
+			new DoubleSolenoid(pin.IntakerDoubleSolenoidForwardID,pin.IntakerDoubleSolenoidBackwardID);
 	
 	private Solenoid IntakerSSol=new Solenoid(pin.IntakerSingleSolenoidID);
 	
@@ -35,9 +35,14 @@ public class Intaker {
 	private static boolean hasCube=false;
 	private static boolean raiseNeeded=false;
 	
+	private static Timer hasCubeTimer=new Timer();
+	
 	public Intaker() {
 		IntakerLMotor.setInverted(true);
+		hasCubeTimer.reset();
 	}
+	
+	
 	
 	public void setLargeAngle(boolean value) {
 		isLargeAngle=value;
@@ -48,18 +53,22 @@ public class Intaker {
 		switch(Mode) {
 		case 0:
 			hasCube=false;
+			
 			if(isLargeAngle) {
 				IntakerDSol.set(DoubleSolenoid.Value.kReverse);
 			}else {
 				IntakerDSol.set(DoubleSolenoid.Value.kForward);
 			}
+			
 			IntakerSSol.set(false);
 			IntakerRMotor.set(ControlMode.PercentOutput,0);
 			IntakerLMotor.set(ControlMode.PercentOutput,0);
+			
 			if((!IntakerRLight.get())&&(!IntakerLLight.get())) {
+				hasCubeTimer.reset();
+				hasCubeTimer.start();
 				hasCube=true;
 				Mode=2;
-				raiseNeeded=true;
 			}
 			break;
 		case 1:
@@ -72,15 +81,20 @@ public class Intaker {
 			IntakerRMotor.set(ControlMode.PercentOutput,RBonus?HighSpeed:LowSpeed);
 			IntakerLMotor.set(ControlMode.PercentOutput,RBonus?LowSpeed:HighSpeed);
 			if((!IntakerRLight.get())&&(!IntakerLLight.get())) {
+				hasCubeTimer.reset();
+				hasCubeTimer.start();
 				hasCube=true;
 				Mode=2;
-				raiseNeeded=true;
 			}
 			break;
 		case 2:
-			if(IntakerRLight.get()||IntakerLLight.get()) {
-				RBonus=!RBonus;
-				Mode=0;
+			if(!hasCube) {
+				Mode++;
+			}
+			if(hasCubeTimer.get()>=1.3) {
+				raiseNeeded=true;
+				hasCubeTimer.reset();
+				hasCubeTimer.stop();
 			}
 			IntakerDSol.set(DoubleSolenoid.Value.kForward);
 			IntakerSSol.set(true);
@@ -134,6 +148,5 @@ public class Intaker {
 			Mode=value;
 		}
 	}
-
 
 }

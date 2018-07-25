@@ -18,11 +18,17 @@ public final class pin {
 
 	public final static int AngleMotorID=9;
 	
+	public final static int LiftMotorID=11;
+	public final static int ClimbMotorMasterID=12;
+	public final static int ClimbMotorSlaveID=10;
+	
 	/*Solenoid Pin*/
 	
-	public final static int IntakerDoubleSolenoidForawrdID=2;
+	public final static int IntakerDoubleSolenoidForwardID=2;
 	public final static int IntakerDoubleSolenoidBackwardID=1;
 	public final static int IntakerSingleSolenoidID=0;
+	public final static int ClimbDoubleSolenoidForwardID=6;
+	public final static int ClimbDoubleSolenoidBackwardID=7;
 	
 	/*Sensor Pin*/
 	

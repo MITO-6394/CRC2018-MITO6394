@@ -11,7 +11,6 @@ public class Constants {
 	public final static int kTimeoutMs = 10;
 	public final static int kPIDLoopIdx = 0;
 	public final static int kTurnTimeoutSec = 3;
-	
 	/****
 	/* Below are constants that need to be adjusted
 	/* V stands for velocity
@@ -19,14 +18,21 @@ public class Constants {
 	*/
 	
 	
-		//Encoder
+		//Elevator
+	public final static double kRawAngleMaxVel=4200;
+	public final static double kRawElevatorMaxVel=2500;
 	
+	
+		//Base
+	
+	public final static double kAccThreshold=200;
+	public final static double kDeaccThreshold=350;
 	public final static double kRawMinVel=200;		//raw encoder value
-	public final static double kRawMaxVel=3000.0;	//raw encoder value
+	public static double kRawMaxVel=3000.0;	//raw encoder value
 	public final static double kMinVel=kRawMinVel/kRawMaxVel;	//normalized min velocity when robot starts to move
-	
+		
 		//AHRS
-	
-	public final static double kMaxRate=300;	
-	public final static double kSlowDownAngle=20;	//angle where robot starts to slow down
+		
+	public final static double kMaxRate=5;	
+	public final static double kSlowDownAngle=35;	//angle where robot starts to slow down
 }
