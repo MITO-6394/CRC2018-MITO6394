@@ -84,8 +84,8 @@ public class Elevator {
 
 		// Initiation
 		ElevatorSlave.follow(ElevatorMaster);
-		TalonSRXInit(ElevatorMaster);
-		configPID(ElevatorMaster, 0, 0.005, 0, 0);
+		util.TalonSRXInit(ElevatorMaster);
+		util.configPID(ElevatorMaster, 0, 0.005, 0, 0);
 		ElevatorMaster.configClosedLoopPeakOutput(0, 0.70, Constants.kTimeoutMs);
 
 		// HeightLimit
@@ -99,8 +99,8 @@ public class Elevator {
 		ElevatorMaster.configPeakCurrentDuration(kCurrentLimitDuration, kTimeoutMs);
 
 		// Initiate AngleMotor
-		TalonSRXInit(AngleMotor);
-		configPID(AngleMotor, 0, 0.2, 0, 0.5);
+		util.TalonSRXInit(AngleMotor);
+		util.configPID(AngleMotor, 0, 0.2, 0, 0.5);
 
 		// AngleLimit
 		AngleMotor.configClosedLoopPeakOutput(0, 0.6, Constants.kTimeoutMs);
@@ -160,7 +160,7 @@ public class Elevator {
 	}
 
 	public void setInitialVertical() {
-		configPID(AngleMotor, 0, 0.4, 0, 0.6);
+		util.configPID(AngleMotor, 0, 0.4, 0, 0.6);
 		setAngle = 2.5 * 10000;
 	}
 
@@ -177,9 +177,9 @@ public class Elevator {
 	public void setVerticalAngle() {
 		angleIsCalibrated = false;
 		if (hasCube) {
-			configPID(AngleMotor, 0, 0.6, 0, 0.6);
+			util.configPID(AngleMotor, 0, 0.6, 0, 0.6);
 		} else {
-			configPID(AngleMotor, 0, 0.4, 0, 0.6);
+			util.configPID(AngleMotor, 0, 0.4, 0, 0.6);
 		}
 		setAngle = Angle_90;
 	}
@@ -187,19 +187,19 @@ public class Elevator {
 	public void setBackAngle() {
 		angleIsCalibrated = false;
 		if (ElevatorMaster.getSelectedSensorPosition(0) >= kMidDistance) {
-			configPID(AngleMotor, 0, 0.5, 0, 0.6);
+			util.configPID(AngleMotor, 0, 0.5, 0, 0.6);
 			setAngle = Angle_135;
 		}
 	}
 
 	public void setOriginAngle() {
 		if (hasCube) {
-			configPID(AngleMotor, 0, 0.5, 0, 0.6);
+			util.configPID(AngleMotor, 0, 0.5, 0, 0.6);
 		} else {
 			if (AngleMotor.getSelectedSensorPosition(0) > ((Angle_90 + Angle_135) / 2)) {
-				configPID(AngleMotor, 0, 0.5, 0, 0.8);
+				util.configPID(AngleMotor, 0, 0.5, 0, 0.8);
 			} else {
-				configPID(AngleMotor, 0, 0.4, 0, 0.4);
+				util.configPID(AngleMotor, 0, 0.4, 0, 0.4);
 			}
 		}
 		setAngle = Angle_0;
@@ -237,7 +237,7 @@ public class Elevator {
 		AngleMotor.configReverseSoftLimitEnable(false, kTimeoutMs);
 		angleManualMode = true;
 		isCalibrated = false;
-		configPID(AngleMotor, 0, 0.6, 0, 0);
+		util.configPID(AngleMotor, 0, 0.6, 0, 0);
 		AngleMotor.set(ControlMode.Velocity, value * Constants.kRawAngleMaxVel);
 	}
 
@@ -245,7 +245,22 @@ public class Elevator {
 		AngleMotor.configReverseSoftLimitEnable(true, kTimeoutMs);
 		angleManualMode = false;
 		setAngle = AngleMotor.getSelectedSensorPosition(0);
-		configPID(AngleMotor, 0, 0.6, 0, 0.6);
+		util.configPID(AngleMotor, 0, 0.6, 0, 0.6);
+	}
+	
+	private void displayInfo()
+	{
+		SmartDashboard.putBoolean("Info_Elevator_isTop", isTop);
+		SmartDashboard.putBoolean("Info_Elevator_Calibrated", isCalibrated);
+		SmartDashboard.putBoolean("Info_Elevator_elevatorLight", elevatorLight.getVoltage() < 3.5);
+		SmartDashboard.putBoolean("Info_Elevator_AngleCalibrated", angleIsCalibrated); 
+		SmartDashboard.putNumber("Info_Elevator_Distance", ElevatorMaster.getSelectedSensorPosition(kPIDLoopIdx));
+		SmartDashboard.putNumber("Info_Elevator_PWM", ElevatorMaster.getMotorOutputPercent());
+		SmartDashboard.putNumber("Info_Elevator_Current", ElevatorMaster.getOutputCurrent());
+		SmartDashboard.putNumber("Info_Elevator_Vel", ElevatorMaster.getSelectedSensorVelocity(kPIDLoopIdx));
+		SmartDashboard.putNumber("Info_IntakerAngleLight", angleLight.getVoltage());
+		SmartDashboard.putNumber("Info_IntakerAngle", AngleMotor.getSelectedSensorPosition(kPIDLoopIdx));
+		SmartDashboard.putNumber("Info_IntakerAngleCurrent", AngleMotor.getOutputCurrent());
 	}
 
 	public void run() {
@@ -272,11 +287,11 @@ public class Elevator {
 			} else {
 				if (hasCube & (setAngle == Angle_0)) {
 					if (!util.isWithin(AngleMotor.getSelectedSensorPosition(0), Total_Angle_0, 0.2 * 10000)) {
-						configPID(AngleMotor, 0, 0.07, 0, 0);
+						util.configPID(AngleMotor, 0, 0.07, 0, 0);
 						AngleMotor.set(ControlMode.Velocity,
 								(AngleMotor.getSelectedSensorPosition(0) - Total_Angle_0) * 0.08);
 					} else {
-						configPID(AngleMotor, 0, 0.6, 0, 0.6);
+						util.configPID(AngleMotor, 0, 0.6, 0, 0.6);
 						AngleMotor.set(ControlMode.Position, Total_Angle_0);
 					}
 				} else {
@@ -292,11 +307,11 @@ public class Elevator {
 				ElevatorMaster.configContinuousCurrentLimit((int) (kCurrentLimit * 2.3), kTimeoutMs);
 				ElevatorMaster.configPeakCurrentLimit((int) (kCurrentLimit * 3), kTimeoutMs);
 				ElevatorMaster.configClosedLoopPeakOutput(0, 0.9, Constants.kTimeoutMs);
-				configPID(ElevatorMaster, 0, 0.7, 0, 0.03);
+				util.configPID(ElevatorMaster, 0, 0.7, 0, 0.03);
 				ElevatorMaster.set(ControlMode.Position, TopDistance);
 			} else {
 				if (isCalibrated) {
-					configPID(ElevatorMaster, 0, 0.04, 0, 0);
+					util.configPID(ElevatorMaster, 0, 0.04, 0, 0);
 					ElevatorMaster.configContinuousCurrentLimit((int) (kCurrentLimit * 0.6), kTimeoutMs);
 					ElevatorMaster.configPeakCurrentLimit((int) (kCurrentLimit * 1.5), kTimeoutMs);
 					ElevatorMaster.configClosedLoopPeakOutput(0, 0.3, Constants.kTimeoutMs);
@@ -306,7 +321,7 @@ public class Elevator {
 					ElevatorMaster.configPeakCurrentLimit((int) (kCurrentLimit * 2), kTimeoutMs);
 					ElevatorMaster.configClosedLoopPeakOutput(0, 0.65, Constants.kTimeoutMs);
 					if (elevatorLight.getAverageVoltage() < 3.5) {
-						configPID(ElevatorMaster, 0, 0.025, 0, 0);
+						util.configPID(ElevatorMaster, 0, 0.025, 0, 0);
 						ElevatorMaster.set(ControlMode.Position, kBotDistance);
 						ElevatorMaster.setSelectedSensorPosition((int) kBotDistance, kPIDLoopIdx, kTimeoutMs);
 						isCalibrated = true;
@@ -314,10 +329,10 @@ public class Elevator {
 						ElevatorMaster.set(ControlMode.PercentOutput, -0.2);
 						isCalibrated = false;
 					} else if (ElevatorMaster.getSelectedSensorPosition(kPIDLoopIdx) < kMidDistance) {
-						configPID(ElevatorMaster, 0, 0.006, 0, 0);
+						util.configPID(ElevatorMaster, 0, 0.006, 0, 0);
 						ElevatorMaster.set(ControlMode.Position, kBotDistance - kBotErrDistance);
 					} else {
-						configPID(ElevatorMaster, 0, 0.006, 0, 0.03);
+						util.configPID(ElevatorMaster, 0, 0.006, 0, 0.03);
 						if (AngleMotor.getSelectedSensorPosition(kPIDLoopIdx) <= (Angle_90 * 1.05)) {
 							// Move to mid position
 							ElevatorMaster.set(ControlMode.Position, kMidDistance * 0.95);
@@ -332,48 +347,12 @@ public class Elevator {
 
 		/*
 		 * if(ElevatorMaster.getSelectedSensorPosition(kPIDLoopIdx)<kMidDistance) {
-		 * configPID(ElevatorMaster,0,0.008,0,0); }else {
-		 * configPID(ElevatorMaster,0,0.005,0,0); }
+		 * util.configPID(ElevatorMaster,0,0.008,0,0); }else {
+		 * util.configPID(ElevatorMaster,0,0.005,0,0); }
 		 * 
 		 * ElevatorMaster.set(ControlMode.Position, kBotDistance);
 		 */
-		// Display Info
-		SmartDashboard.putBoolean("Info_Elevator_isTop", isTop);
-		SmartDashboard.putBoolean("Info_Elevator_Calibrated", isCalibrated);
-		SmartDashboard.putBoolean("Info_Elevator_elevatorLight", elevatorLight.getVoltage() < 3.5);
-		SmartDashboard.putBoolean("Info_Elevator_AngleCalibrated", angleIsCalibrated);
-		SmartDashboard.putNumber("Info_Elevator_Distance", ElevatorMaster.getSelectedSensorPosition(kPIDLoopIdx));
-		SmartDashboard.putNumber("Info_Elevator_PWM", ElevatorMaster.getMotorOutputPercent());
-		SmartDashboard.putNumber("Info_Elevator_Current", ElevatorMaster.getOutputCurrent());
-		SmartDashboard.putNumber("Info_Elevator_Vel", ElevatorMaster.getSelectedSensorVelocity(kPIDLoopIdx));
-		SmartDashboard.putNumber("Info_IntakerAngleLight", angleLight.getVoltage());
-		SmartDashboard.putNumber("Info_IntakerAngle", AngleMotor.getSelectedSensorPosition(kPIDLoopIdx));
-		SmartDashboard.putNumber("Info_IntakerAngleCurrent", AngleMotor.getOutputCurrent());
-
-	}
-
-	private void TalonSRXInit(TalonSRX _talon) {
-
-		// set up TalonSRX and closed loop
-
-		_talon.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, kPIDLoopIdx, kTimeoutMs);
-		_talon.setSensorPhase(true);
-
-		_talon.configNominalOutputForward(0, kTimeoutMs);
-		_talon.configNominalOutputReverse(0, kTimeoutMs);
-		_talon.configPeakOutputForward(1, kTimeoutMs);
-		_talon.configPeakOutputReverse(-1, kTimeoutMs);
-
-		_talon.setSelectedSensorPosition(0, kPIDLoopIdx, kTimeoutMs);
-
-	}
-
-	private void configPID(TalonSRX _talon, double kF, double kP, double kI, double kD) {
-
-		_talon.config_kF(kPIDLoopIdx, kF, kTimeoutMs);
-		_talon.config_kP(kPIDLoopIdx, kP, kTimeoutMs);
-		_talon.config_kI(kPIDLoopIdx, kI, kTimeoutMs);
-		_talon.config_kD(kPIDLoopIdx, kD, kTimeoutMs);
-
+		
+		displayInfo();
 	}
 }

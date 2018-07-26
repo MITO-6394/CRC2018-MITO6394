@@ -19,6 +19,7 @@ public class Base implements PIDOutput,PIDSource{
 	VictorSPX LMotorSlave=new VictorSPX(pin.BaseLMotorSlaveID);
 	VictorSPX RMotorSlave=new VictorSPX(pin.BaseRMotorSlaveID);
 
+	//Gyro initialization
 	private final AHRS ahrs = new AHRS(Port.kMXP);
 	private double pos_X=0;
 	private double pos_Y=0;
@@ -34,15 +35,16 @@ public class Base implements PIDOutput,PIDSource{
 	
 	/*Constants*/
 	
-	private double tolErrAngle=2.0;
-	private double disErr=600;
+	private double tolErrAngle=2.0;		//Max angle tolerance
+	private double disErr=600;			//Max distance tolerance
 
+	//Nullary constructor
 	public Base() {
 
 		/** Initiate Closed-loop system*/
 		
-		TalonSRXInit(LMotorMaster);
-		TalonSRXInit(RMotorMaster);
+		util.TalonSRXInit(LMotorMaster);
+		util.TalonSRXInit(RMotorMaster);
 		
 		LMotorSlave.setInverted(true);
 		LMotorMaster.setInverted(true);
@@ -52,6 +54,7 @@ public class Base implements PIDOutput,PIDSource{
 		
 		resetSensor();
 		
+		//Set PID parameters
 		turnController=new PIDController(0.03, 0, 0, 0, this, this);
 		turnController.setInputRange(-180.0f, 180.0f);
 		turnController.setOutputRange(-1.0, 1.0);
@@ -67,7 +70,7 @@ public class Base implements PIDOutput,PIDSource{
 	
 	public void run() {
 		UpdateMap();
-		DisplayInfo();
+		DisplayInfo();			//Show parameters
 	}
 	
 
@@ -89,47 +92,48 @@ public class Base implements PIDOutput,PIDSource{
 		 * 4096 Units/Rev * 500 RPM / 600 100ms/min in either direction:
 		 * velocity setpoint is in units/100ms
 		 */
-		configPID(LMotorMaster,0.3,0.7,0,0.3);
-		configPID(RMotorMaster,0.3,0.7,0,0.3);
+		util.configPID(LMotorMaster,0.3,0.7,0,0.3);
+		util.configPID(RMotorMaster,0.3,0.7,0,0.3);
 
+		
+		//Signed unitization
 		double LTempV=(forward*Math.abs(forward)+turn*Math.abs(turn))
 					* Constants.kRawMaxVel;
-		
 		double RTempV=(forward*Math.abs(forward)-turn*Math.abs(turn))
 					* Constants.kRawMaxVel;
 
 		if(smoothMode){
-			//motion profile applied
+			//Motion Profile Applied
 			if(Math.abs(LTempV)<Math.abs(LMotorMaster.getSelectedSensorVelocity(Constants.kPIDLoopIdx))) {
 				//Deacceleration
 				LMotorMaster.set(ControlMode.Velocity,
 		            	util.setWithin(
-		                	LTempV,   //Temp velocity
+		                	LTempV,   //Temp Velocity
 		                	LMotorMaster.getSelectedSensorVelocity(Constants.kPIDLoopIdx),    //Target velocity
-		                	Constants.kDeaccThreshold));   //limit
+		                	Constants.kDeaccThreshold));   //Limit
 					
 		        RMotorMaster.set(ControlMode.Velocity,
 		            	util.setWithin(
 		                	RTempV,   //Temp velocity
 		                	RMotorMaster.getSelectedSensorVelocity(Constants.kPIDLoopIdx),    //Targer velocity
-		                	Constants.kDeaccThreshold));   //limit
+		                	Constants.kDeaccThreshold));   //Limit
 			}else {
 				//Acceleration
 				LMotorMaster.set(ControlMode.Velocity,
 		            	util.setWithin(
 		                	LTempV,   //Temp velocity
 		                	LMotorMaster.getSelectedSensorVelocity(Constants.kPIDLoopIdx),    //Target velocity
-		                	Constants.kAccThreshold));   //limit
+		                	Constants.kAccThreshold));   //Limit
 					
 		        RMotorMaster.set(ControlMode.Velocity,
 		            	util.setWithin(
 		                	RTempV,   //Temp velocity
 		                	RMotorMaster.getSelectedSensorVelocity(Constants.kPIDLoopIdx),    //Targer velocity
-		                	Constants.kAccThreshold));   //limit
+		                	Constants.kAccThreshold));   //Limit
 			}
 			
 		}else{
-			//no motion profile applied
+			//No motion profile applied
 			LMotorMaster.set(ControlMode.Velocity,LTempV); 
         	RMotorMaster.set(ControlMode.Velocity,RTempV); 
 		}		
@@ -140,15 +144,8 @@ public class Base implements PIDOutput,PIDSource{
 
 		/****** PWM mode : clockwise is positive */
 		
-		/*
-		LMotorMaster.set(ControlMode.PercentOutput,
-				forward*Math.abs(forward)+turn*Math.abs(turn));
-
-		RMotorMaster.set(ControlMode.PercentOutput,
-				forward*Math.abs(forward)-turn*Math.abs(turn));	
-		*/
-		configPID(LMotorMaster,0.3,0.7,0.0001,0.3);
-		configPID(RMotorMaster,0.3,0.7,0.0001,0.3);
+		util.configPID(LMotorMaster,0.3,0.7,0.0001,0.3);
+		util.configPID(RMotorMaster,0.3,0.7,0.0001,0.3);
 		
 		LMotorMaster.set(ControlMode.PercentOutput,forward-turn, 0);
 		RMotorMaster.set(ControlMode.PercentOutput,forward+turn, 0);
@@ -156,8 +153,10 @@ public class Base implements PIDOutput,PIDSource{
 
 	public boolean Rotate(double angle,double vel, double forVel) {
 
-		/***
+		/****
 		 * angle is in degree
+		 * angle is absolute angle
+		 * returns a boolean shows if the robot is at the target angle
 		 */
 		
 //		turnController.setSetpoint(angle);
@@ -166,9 +165,21 @@ public class Base implements PIDOutput,PIDSource{
 //		return turnController.onTarget();
 		
 	
-		double angleLeft=angle-(ahrs.getAngle()%360.0);
-		SmartDashboard.putNumber("Info_MaxRV", ahrs.getRate());
+		double angleLeft=angle-(ahrs.getAngle()%360.0);				//Angular displacement
+		SmartDashboard.putNumber("Info_MaxRV", ahrs.getRate());		//Show spin rate
+		
+		/*
+		 * IF(targetAngle-2.5 < currentAngle < targetAngle+2.5)
+		 * 		Stop
+		 * ELSE IF(targetAngle - currentAngle < kSlowDownAngle*velocityRatio)
+		 * 		Slowdown
+		 * ELSE
+		 * 		PID Spin
+		 */
+		
+		//Check angle tolerance 2.5 degree
 		if(util.isWithin(angleLeft,0,2.5)) {
+			//Stop
 			velDrive(forVel,0,false);
 			return true;
 		}else if(
@@ -176,37 +187,44 @@ public class Base implements PIDOutput,PIDSource{
 					angleLeft,
 					0,
 					Constants.kSlowDownAngle*(ahrs.getRate()/Constants.kMaxRate)
-					//Different starting angles
+					/*
+					 * Decide a suitable angle for slow down
+					 * Relatively determined by current spin rate
+					 */
 					)
 				)
 		{
+			//Slow down in "2*kMinVel"
 			velDrive(forVel,util.equalsign(-angleLeft, Constants.kMinVel*2),false);
 			return false;
 		}else{
+			//Spin at a high rate relate to angle left
 			velDrive(forVel,-angleLeft*vel,true);
 			return false;
 		}
-
 	}
 
 	public boolean DisDrive(double dis, double speed, boolean preciseMode) {
-		/**** distance closed-loop mode */
+		/****
+		 * distance closed-loop mode
+		 * Gets 3 parameters displays distance, speed and a mode-switch flag
+		 * Returns a boolean shows if the robot is at the target distance
+		 */
 
 		/* One rev=4096units
 		 * Times 4096
 		 */
 
-		double temppos;
+		double temppos;				//Position displacement
 		boolean result=false;
-		temppos=(dis)* 4096;
+		temppos=(dis) * 4096;
 		
-		double LTempPos=temppos+LDis;
-		double RTempPos=temppos+RDis;
+		double LTempPos=temppos + LDis;
+		double RTempPos=temppos + RDis;
 		
 		
 		//Control
 		if(!preciseMode) {
-			
 			//Approximate velocity
 			velDrive(speed,0,false);
 			//Enable soft limit
@@ -220,8 +238,8 @@ public class Base implements PIDOutput,PIDSource{
 			
 			//Distance Closed Loop
 			
-			configPID(LMotorMaster,0,0.03,0,0.01);
-			configPID(RMotorMaster,0,0.03,0,0.01);
+			util.configPID(LMotorMaster,0,0.03,0,0.01);
+			util.configPID(RMotorMaster,0,0.03,0,0.01);
 			
 			
 			LMotorMaster.set(ControlMode.Position,LTempPos);
@@ -231,20 +249,6 @@ public class Base implements PIDOutput,PIDSource{
 		}
 			
 		return result;
-		
-
-		/*
-		configPID(LMotorSlave,0,0.05,0,0.02);
-		configPID(RMotorSlave,0,0.05,0,0.02);
-
-		LMotorSlave.set(ControlMode.Position,
-				(dis+angle)* 4096);
-
-		RMotorSlave.set(ControlMode.Position,
-				(dis-angle)* 4096);
-
-		DisplayInfo();
-		 */
 	}
 	
 	public void UpdateDistance() {
@@ -277,30 +281,6 @@ public class Base implements PIDOutput,PIDSource{
 		RMotorMaster.setSelectedSensorPosition(0, Constants.kPIDLoopIdx, Constants.kTimeoutMs);
 		ahrs.reset();
 		ahrs.resetDisplacement();
-	}
-
-	private void TalonSRXInit(TalonSRX _talon) {
-		//set up TalonSRX and closed loop
-		_talon.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative,
-				Constants.kPIDLoopIdx,Constants.kTimeoutMs);
-
-		_talon.setSensorPhase(true);
-
-		_talon.configNominalOutputForward(0, Constants.kTimeoutMs);
-		_talon.configNominalOutputReverse(0, Constants.kTimeoutMs);
-		_talon.configPeakOutputForward(1, Constants.kTimeoutMs);
-		_talon.configPeakOutputReverse(-1, Constants.kTimeoutMs);
-
-		_talon.setSelectedSensorPosition(0, Constants.kPIDLoopIdx, Constants.kTimeoutMs);
-
-	}
-
-	private void configPID(TalonSRX _talon,double kF, double kP,double kI, double kD) {
-		_talon.config_kF(Constants.kPIDLoopIdx, kF, Constants.kTimeoutMs);
-		_talon.config_kP(Constants.kPIDLoopIdx, kP, Constants.kTimeoutMs);
-		_talon.config_kI(Constants.kPIDLoopIdx, kI, Constants.kTimeoutMs);
-		_talon.config_kD(Constants.kPIDLoopIdx, kD, Constants.kTimeoutMs);
-
 	}
 	
 	@Override

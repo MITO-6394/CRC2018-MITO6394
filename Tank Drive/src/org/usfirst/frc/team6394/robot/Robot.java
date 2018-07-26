@@ -55,60 +55,6 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void autonomousPeriodic() {
 		isRight=DriverStation.getInstance().getGameSpecificMessage().charAt(0)=='R';
-//		if(isRight) {
-//			if(autoTimer.get()<1) {
-//				mBase.velDrive(0,0.2,false);
-//			}else if(autoTimer.get()<2) {
-//				mBase.velDrive(0.4,0,false);
-//			}else if(autoTimer.get()<3) {
-//				mBase.velDrive(0,0.2,false);
-//			}else if(autoTimer.get()<4) {
-//				mBase.velDrive(0,-0.4,false);
-//			}else if(autoTimer.get()<6) {
-//				mBase.velDrive(0.35,0,false);
-//			}else if(autoTimer.get()<6.5) {
-//				mBase.velDrive(0, 0, false);
-//				if(firstRaise) {
-//					firstRaise=false;
-//					mElevator.changePos(4);
-//					mElevator.toggleBotAngle();
-//				}
-//			}else if(autoTimer.get()<7){
-//				mBase.velDrive(0,0,true);
-//				mIntaker.emitCube(0.8);
-//			}else {
-//				mBase.velDrive(0, 0, false);
-//			}
-//		}else {
-//			mBase.velDrive(0,0.2,true);
-//		}
-//		if(isRight) {
-//			switch(autoState) {
-//			case 0:
-//				if(mBase.Rotate(45, 0.05, 0)) {
-//					autoState++;
-//					mBase.UpdateDistance();
-//				}break;
-//			case 1:
-//				if(mBase.DisDrive(2, 0.2, false)) {
-//					autoState++;
-//				}break;
-//			case 2:
-//				if(mBase.Rotate(0, 0.05, 0)) {
-//					mBase.UpdateDistance();
-//					autoTimer.reset();
-//					autoState++;
-//				}break;
-//			case 3:
-//				if(mBase.DisDrive(4, 0.2, false)||autoTimer.get()>5) {
-//					autoState++;
-//				}break;
-//			case 4:
-//				mIntaker.emitCube(0.8);
-//				mBase.velDrive(0, 0, false);
-//			}
-//		}
-		
 		mBase.velDrive(0.3, 0, false);
 		
 		mBase.run();
@@ -125,17 +71,7 @@ public class Robot extends IterativeRobot {
 	public void teleopPeriodic() {
 		
 		raiseTimer.start();
-		
-		//actionstick
-//		if(actionStick.getRawButton(buttons.elevatorRaiseBut)) {
-//			mElevator.manualMove(0.2);
-//		}
-//		if(actionStick.getRawButton(buttons.elevatorDropBut)) {
-//			mElevator.manualMove(-0.2);
-//		}
-//		if(actionStick.getRawButtonReleased(buttons.elevatorRaiseBut)||actionStick.getRawButtonReleased(buttons.elevatorDropBut)) {
-//			mElevator.disableManualMove();
-//		}
+
 		if(actionStick.getRawButtonPressed(buttons.intakerBackAngleBut)) {
 			mElevator.setBackAngle();
 		}
@@ -162,17 +98,7 @@ public class Robot extends IterativeRobot {
 				mElevator.changePos(1);
 				break;
 			}
-		//movestick
-//		if(moveStick.getRawButton(buttons.elevatorForceRaiseBut)) {
-//			mElevator.manualMove(0.6);
-//		}
-//		if(moveStick.getRawButton(buttons.elevatorForceDropBut)) {
-//			mElevator.manualMove(-0.6);
-//		}
-//		if(moveStick.getRawButtonReleased(buttons.elevatorForceRaiseBut)
-//				||moveStick.getRawButtonReleased(buttons.elevatorForceDropBut)) {
-//			mElevator.disableManualMove();
-//		}
+		
 		switch(moveStick.getPOV()) {
 			case 270:
 				mElevator.setAngleCalibrated();
