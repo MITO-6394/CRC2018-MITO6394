@@ -91,7 +91,7 @@ public class Intaker {
 			if(!hasCube) {
 				Mode++;
 			}
-			if(hasCubeTimer.get()>=1.3) {
+			if(hasCubeTimer.get()>=0.5) {
 				raiseNeeded=true;
 				hasCubeTimer.reset();
 				hasCubeTimer.stop();
