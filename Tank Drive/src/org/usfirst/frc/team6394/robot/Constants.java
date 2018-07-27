@@ -26,7 +26,7 @@ public class Constants {
 		//Base
 	
 	public final static double kAccThreshold=200;
-	public final static double kDeaccThreshold=350;
+	public final static double kDeaccThreshold=270;
 	public final static double kRawMinVel=200;		//raw encoder value
 	public static double kRawMaxVel=3000.0;	//raw encoder value
 	public final static double kMinVel=kRawMinVel/kRawMaxVel;	//normalized min velocity when robot starts to move

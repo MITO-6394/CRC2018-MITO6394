@@ -14,8 +14,8 @@ public class IntakerAngle {
 	
 	private final static double maxAngle=0.3*10000;
 	private final static double Angle_135=0.225*10000;
-	private final static double Angle_90=0.15*10000;
-	private final static double Angle_45=0.75*10000;
+	private final static double Angle_90=0.16*10000;
+	private final static double Angle_45=0.08*10000;
 	private final static double minAngle=0.0*10000;
 	
 	

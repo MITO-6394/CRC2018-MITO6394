@@ -92,8 +92,8 @@ public class Base implements PIDOutput,PIDSource{
 		 * 4096 Units/Rev * 500 RPM / 600 100ms/min in either direction:
 		 * velocity setpoint is in units/100ms
 		 */
-		util.configPID(LMotorMaster,0.3,0.7,0,0.3);
-		util.configPID(RMotorMaster,0.3,0.7,0,0.3);
+		util.configPID(LMotorMaster,0.3,1.4,0,0.3);
+		util.configPID(RMotorMaster,0.3,1.4,0,0.3);
 
 		
 		//Signed unitization
